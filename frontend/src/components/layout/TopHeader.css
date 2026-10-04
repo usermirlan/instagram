@@ -1,0 +1,80 @@
+.top-header {
+  display: none;
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 0 16px;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 90;
+}
+
+.top-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo-badge.mini {
+  width: 28px;
+  height: 28px;
+  font-size: 0.95rem;
+}
+
+.logo-text.mini {
+  font-size: 1.15rem;
+}
+
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.top-icon-btn {
+  color: var(--text-muted);
+  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  position: relative;
+}
+
+.top-badge-dot {
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  min-width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+}
+
+.top-icon-btn:hover {
+  color: var(--text-main);
+}
+
+.top-icon-btn.logout:hover {
+  color: var(--danger);
+}
+
+@media (max-width: 900px) {
+  .top-header {
+    display: flex;
+  }
+}

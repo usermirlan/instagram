@@ -1,0 +1,47 @@
+:root {
+  /* Brand colors */
+  --primary: #6366f1;
+  --primary-hover: #4f46e5;
+  --primary-glow: rgba(99, 102, 241, 0.35);
+  
+  --secondary: #ec4899;
+  --secondary-glow: rgba(236, 72, 153, 0.35);
+  
+  --accent-gradient: linear-gradient(135deg, #6366f1 0%, #ec4899 50%, #f97316 100%);
+  --accent-gradient-hover: linear-gradient(135deg, #4f46e5 0%, #db2777 50%, #ea580c 100%);
+  
+  /* Dark Theme Palette (Default for modern social feel) */
+  --bg-main: #0b0f19;
+  --bg-secondary: #111827;
+  --bg-card: rgba(17, 24, 39, 0.85);
+  --bg-card-hover: rgba(31, 41, 55, 0.8);
+  --bg-input: #1f2937;
+  
+  /* Borders & Glass */
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-focus: rgba(99, 102, 241, 0.6);
+  --glass-bg: rgba(17, 24, 39, 0.7);
+  --glass-blur: blur(16px);
+  
+  /* Text */
+  --text-main: #f9fafb;
+  --text-muted: #9ca3af;
+  --text-faint: #6b7280;
+  
+  /* Status */
+  --danger: #ef4444;
+  --danger-bg: rgba(239, 68, 68, 0.15);
+  --success: #10b981;
+  --success-bg: rgba(16, 185, 129, 0.15);
+  
+  /* Layout */
+  --sidebar-width: 250px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-full: 9999px;
+  
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s ease;
+}

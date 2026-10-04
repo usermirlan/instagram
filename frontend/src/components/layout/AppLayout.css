@@ -1,0 +1,30 @@
+.app-container {
+  display: flex;
+  min-height: 100vh;
+  background: var(--bg-main);
+}
+
+.app-main-content {
+  flex: 1;
+  margin-left: var(--sidebar-width);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 32px 20px;
+}
+
+.content-wrapper {
+  width: 100%;
+  max-width: 960px;
+}
+
+@media (max-width: 900px) {
+  .app-container {
+    flex-direction: column;
+  }
+
+  .app-main-content {
+    margin-left: 0;
+    padding: 16px 12px 76px 12px;
+  }
+}
