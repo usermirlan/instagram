@@ -28,7 +28,8 @@ SECRET_KEY = os.getenv(
 
 DEBUG = os.getenv("DEBUG", "True").lower() in ("true", "1", "yes")
 
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+allowed_env = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,.onrender.com")
+ALLOWED_HOSTS = [host.strip() for host in allowed_env.split(",") if host.strip()]
 
 
 # =============================================================================
@@ -122,8 +123,22 @@ WSGI_APPLICATION = "mikosocial.wsgi.application"
 # DATABASE (PostgreSQL)
 # =============================================================================
 
-# Эгер DB_ENGINE=postgresql болсо PostgreSQL, болбосо SQLite (development)
-if os.getenv("DB_ENGINE") == "postgresql":
+import urllib.parse
+
+database_url = os.getenv("DATABASE_URL")
+if database_url:
+    url = urllib.parse.urlparse(database_url)
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": url.path[1:],
+            "USER": url.username,
+            "PASSWORD": url.password,
+            "HOST": url.hostname,
+            "PORT": url.port or 5432,
+        }
+    }
+elif os.getenv("DB_ENGINE") == "postgresql":
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
@@ -141,6 +156,7 @@ else:
             "NAME": BASE_DIR / "db.sqlite3",
         }
     }
+
 
 
 # =============================================================================
@@ -251,10 +267,9 @@ SIMPLE_JWT = {
 # CORS SETTINGS
 # =============================================================================
 
-CORS_ALLOWED_ORIGINS = os.getenv(
-    "CORS_ALLOWED_ORIGINS",
-    "http://localhost:3000,http://localhost:5173"
-).split(",")
+cors_env = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173")
+CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_env.split(",") if origin.strip()]
+CORS_ALLOW_ALL_ORIGINS = os.getenv("CORS_ALLOW_ALL_ORIGINS", "True").lower() in ("true", "1")
 
 # Credentials (cookies, auth headers) жөнөтүүгө уруксат
 CORS_ALLOW_CREDENTIALS = True
