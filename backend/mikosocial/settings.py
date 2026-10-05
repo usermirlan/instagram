@@ -69,6 +69,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     # CORS middleware — SessionMiddleware'ден мурун турушу керек
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -201,6 +202,7 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
 
 
 # =============================================================================
@@ -279,17 +281,22 @@ CORS_ALLOW_CREDENTIALS = True
 # DJANGO CHANNELS (WebSocket)
 # =============================================================================
 
-CHANNEL_LAYERS = {
-    "default": {
-        # Development үчүн InMemory, Production үчүн Redis
-        "BACKEND": "channels.layers.InMemoryChannelLayer",
-        # Production үчүн:
-        # "BACKEND": "channels_redis.core.RedisChannelLayer",
-        # "CONFIG": {
-        #     "hosts": [os.getenv("REDIS_URL", "redis://localhost:6379/0")],
-        # },
+redis_url = os.getenv("REDIS_URL")
+if redis_url:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [redis_url],
+            },
+        }
     }
-}
+else:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels.layers.InMemoryChannelLayer",
+        }
+    }
 
 
 # =============================================================================
