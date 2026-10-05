@@ -391,6 +391,64 @@
   border-color: var(--primary);
 }
 
+.bubble-image {
+  max-width: 240px;
+  max-height: 240px;
+  border-radius: 12px;
+  margin-bottom: 6px;
+  object-fit: cover;
+  display: block;
+  cursor: pointer;
+}
+
+.bubble-audio {
+  max-width: 220px;
+  margin-bottom: 4px;
+}
+
+.chat-pending-preview {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  margin: 0 20px 8px;
+}
+
+.chat-pending-img {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.chat-attach-btn, .chat-mic-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.chat-attach-btn:hover, .chat-mic-btn:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.chat-mic-btn.recording {
+  color: #ef4444;
+  animation: pulse 1s infinite;
+  background: rgba(239, 68, 68, 0.2);
+}
+
 .chat-send-btn {
   width: 42px;
   height: 42px;

@@ -3,6 +3,8 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { 
   FiHome, 
   FiSearch, 
+  FiCompass,
+  FiFilm,
   FiPlusSquare, 
   FiMessageSquare, 
   FiBell, 
@@ -47,7 +49,9 @@ const Sidebar = ({ onOpenCreatePost }) => {
 
   const navItems = [
     { to: '/', label: 'Башкы бет', icon: FiHome },
-    { to: '/search', label: 'Издөө / Explore', icon: FiSearch },
+    { to: '/search', label: 'Издөө', icon: FiSearch },
+    { to: '/explore', label: 'Explore', icon: FiCompass },
+    { to: '/reels', label: 'Reels', icon: FiFilm },
     { to: '/chat', label: 'Кабарлар', icon: FiMessageSquare, badge: unreadChat },
     { to: '/notifications', label: 'Билдирүүлөр', icon: FiBell, badge: unreadNotif },
     { to: `/profile/${user?.username}`, label: 'Профиль', icon: FiUser },

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { FiEdit3, FiGrid, FiCamera, FiCheck, FiHeart, FiMessageCircle, FiX, FiUserPlus, FiUserCheck, FiUsers } from 'react-icons/fi';
+import { FiEdit3, FiGrid, FiCamera, FiCheck, FiHeart, FiMessageCircle, FiX, FiUserPlus, FiUserCheck, FiUsers, FiBookmark } from 'react-icons/fi';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import PostCard from '../components/post/PostCard';
@@ -12,6 +12,9 @@ const Profile = () => {
 
   const [profileData, setProfileData] = useState(null);
   const [userPosts, setUserPosts] = useState([]);
+  const [savedPosts, setSavedPosts] = useState([]);
+  const [activeTab, setActiveTab] = useState('posts'); // 'posts' | 'saved'
+  const [loadingSaved, setLoadingSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedPost, setSelectedPost] = useState(null);
@@ -78,9 +81,30 @@ const Profile = () => {
 
   useEffect(() => {
     if (username) {
+      setActiveTab('posts');
       fetchProfileAndPosts();
     }
   }, [username]);
+
+  const fetchSavedPosts = async () => {
+    if (!isMyProfile) return;
+    try {
+      setLoadingSaved(true);
+      const res = await api.get('/posts/saved/');
+      const data = res.data?.results || res.data || [];
+      setSavedPosts(data);
+    } catch (err) {
+      console.error('Failed to load saved posts', err);
+    } finally {
+      setLoadingSaved(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'saved') {
+      fetchSavedPosts();
+    }
+  }, [activeTab]);
 
   const handleFollowToggle = async () => {
     if (!currentUser) return;
@@ -347,22 +371,40 @@ const Profile = () => {
 
       {/* Posts Section Tabs */}
       <div className="profile-posts-tabs">
-        <div className="posts-tab-btn active">
+        <button 
+          className={`posts-tab-btn ${activeTab === 'posts' ? 'active' : ''}`}
+          onClick={() => setActiveTab('posts')}
+          type="button"
+        >
           <FiGrid /> ПОСТТОР ({userPosts.length})
-        </div>
+        </button>
+
+        {isMyProfile && (
+          <button 
+            className={`posts-tab-btn ${activeTab === 'saved' ? 'active' : ''}`}
+            onClick={() => setActiveTab('saved')}
+            type="button"
+          >
+            <FiBookmark /> САКТАЛГАНДАР ({savedPosts.length})
+          </button>
+        )}
       </div>
 
       {/* Posts Grid Container */}
       <div className="profile-posts-grid">
-        {userPosts.length > 0 ? (
+        {activeTab === 'saved' && loadingSaved ? (
+          <div className="no-posts-box glass-card">
+            <p>Сакталган посттор жүктөлүүдө...</p>
+          </div>
+        ) : (activeTab === 'posts' ? userPosts : savedPosts).length > 0 ? (
           <div className="posts-thumbnail-grid">
-            {userPosts.map((p) => (
+            {(activeTab === 'posts' ? userPosts : savedPosts).map((p) => (
               <div 
                 key={p.id} 
                 className="post-thumbnail-item"
                 onClick={() => setSelectedPost(p)}
               >
-                <img src={p.image} alt={p.caption || 'Post'} className="thumbnail-img" />
+                <img src={p.image || (p.images && p.images[0]?.image)} alt={p.caption || 'Post'} className="thumbnail-img" />
                 <div className="thumbnail-overlay">
                   <span className="overlay-stat"><FiHeart /> {p.likes_count}</span>
                   <span className="overlay-stat"><FiMessageCircle /> {p.comments_count}</span>
@@ -372,7 +414,7 @@ const Profile = () => {
           </div>
         ) : (
           <div className="no-posts-box glass-card">
-            <p>Азырынча эч кандай пост жок.</p>
+            <p>{activeTab === 'posts' ? 'Азырынча эч кандай пост жок.' : 'Сакталган посттор жок.'}</p>
           </div>
         )}
       </div>

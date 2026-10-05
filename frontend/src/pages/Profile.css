@@ -225,7 +225,11 @@
   letter-spacing: 1px;
   color: var(--text-muted);
   cursor: pointer;
-  padding: 6px 12px;
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
 }
 
 .posts-tab-btn.active {

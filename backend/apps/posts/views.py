@@ -35,6 +35,18 @@ class PostListCreateView(generics.ListCreateAPIView):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         post = serializer.instance
+
+        # Бир нече сүрөт жүктөлгөн болсо (карусель)
+        images = request.FILES.getlist("images")
+        if images:
+            for idx, img in enumerate(images):
+                from .models import PostImage
+                PostImage.objects.create(post=post, image=img, order=idx)
+                # Биринчи сүрөттү негизги сүрөт кылып коюу (эгер негизги сүрөт бош болсо)
+                if idx == 0 and not post.image:
+                    post.image = img
+                    post.save(update_fields=["image"])
+
         output_serializer = PostSerializer(post, context={"request": request})
         return Response(output_serializer.data, status=status.HTTP_201_CREATED)
 
@@ -116,3 +128,66 @@ class CommentDeleteView(generics.DestroyAPIView):
     """
     queryset = Comment.objects.all()
     permission_classes = [permissions.IsAuthenticated, IsAuthorOrReadOnly]
+
+
+class BookmarkToggleView(APIView):
+    """
+    Постту сактоо же сакталгандардан өчүрүү (Bookmark / Save Toggle).
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, post_id):
+        from .models import Bookmark
+        post = get_object_or_404(Post, id=post_id)
+        bookmark, created = Bookmark.objects.get_or_create(user=request.user, post=post)
+
+        if not created:
+            bookmark.delete()
+            is_saved = False
+        else:
+            is_saved = True
+
+        return Response(
+            {
+                "is_saved": is_saved,
+                "detail": "Пост сакталды" if is_saved else "Пост сакталгандардан өчүрүлдү",
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class SavedPostsListView(generics.ListAPIView):
+    """
+    Колдонуучунун сактап койгон посттору.
+    """
+    serializer_class = PostSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        from .models import Bookmark
+        bookmarked_post_ids = Bookmark.objects.filter(user=self.request.user).values_list("post_id", flat=True)
+        return (
+            Post.objects.filter(id__in=bookmarked_post_ids)
+            .select_related("author", "author__profile")
+            .prefetch_related("likes", "comments", "images")
+            .order_by("-bookmarks__created_at")
+        )
+
+
+class ExplorePostsView(generics.ListAPIView):
+    """
+    Explore (Изилдөө) баракчасы үчүн сунушталган посттор.
+    Лайк жана комментарийлердин санына жараша же жакынкы популярдуу постторду чыгарат.
+    """
+    serializer_class = PostSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        from django.db.models import Count
+        return (
+            Post.objects.annotate(total_engagement=Count("likes") + Count("comments"))
+            .select_related("author", "author__profile")
+            .prefetch_related("likes", "comments", "images")
+            .order_by("-total_engagement", "-created_at")[:60]
+        )
+

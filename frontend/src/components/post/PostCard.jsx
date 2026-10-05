@@ -5,15 +5,19 @@ import {
   FiMessageCircle, 
   FiTrash2, 
   FiSend,
-  FiMoreHorizontal 
+  FiMoreHorizontal,
+  FiBookmark,
+  FiChevronLeft,
+  FiChevronRight
 } from 'react-icons/fi';
-import { FaHeart } from 'react-icons/fa';
+import { FaHeart, FaBookmark } from 'react-icons/fa';
 import api from '../../api/axios';
 import './PostCard.css';
 
 const PostCard = ({ post, onPostDeleted }) => {
   const [isLiked, setIsLiked] = useState(post.is_liked);
   const [likesCount, setLikesCount] = useState(post.likes_count);
+  const [isSaved, setIsSaved] = useState(post.is_saved || false);
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState('');
@@ -21,6 +25,24 @@ const PostCard = ({ post, onPostDeleted }) => {
   const [loadingComments, setLoadingComments] = useState(false);
   const [submittingComment, setSubmittingComment] = useState(false);
   const [isLikeAnimating, setIsLikeAnimating] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Карусель сүрөттөрүнүн тизмеси
+  const imagesList = post.images && post.images.length > 0 
+    ? post.images.map((img) => img.image)
+    : (post.image ? [post.image] : []);
+
+  // Сакталгандар (Bookmark) toggle
+  const handleToggleSave = async () => {
+    const prevSaved = isSaved;
+    setIsSaved(!prevSaved);
+    try {
+      const res = await api.post(`/posts/${post.id}/bookmark/`);
+      setIsSaved(res.data.is_saved);
+    } catch {
+      setIsSaved(prevSaved);
+    }
+  };
 
   // Лайк басуу же кайтарып алуу (Optimistic UI)
   const handleToggleLike = async () => {
@@ -36,7 +58,6 @@ const PostCard = ({ post, onPostDeleted }) => {
       setIsLiked(res.data.liked);
       setLikesCount(res.data.likes_count);
     } catch (err) {
-      // Ката чыкса артка кайтаруу
       setIsLiked(prevLiked);
       setLikesCount(prevCount);
     } finally {
@@ -140,9 +161,65 @@ const PostCard = ({ post, onPostDeleted }) => {
         )}
       </header>
 
-      {/* Image */}
+      {/* Media / Carousel */}
       <div className="post-image-container" onDoubleClick={handleToggleLike}>
-        <img src={post.image} alt={post.caption || 'Post'} className="post-image" loading="lazy" />
+        {imagesList.length > 0 ? (
+          <img 
+            src={imagesList[currentImageIndex]} 
+            alt={post.caption || 'Post'} 
+            className="post-image" 
+            loading="lazy" 
+          />
+        ) : (
+          <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1e293b', color: '#94a3b8' }}>
+            Сүрөт жок
+          </div>
+        )}
+
+        {/* Carousel controls if more than 1 image */}
+        {imagesList.length > 1 && (
+          <>
+            <span className="carousel-counter-badge">
+              {currentImageIndex + 1}/{imagesList.length}
+            </span>
+
+            {currentImageIndex > 0 && (
+              <button 
+                type="button" 
+                className="carousel-btn prev"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrentImageIndex((prev) => prev - 1);
+                }}
+              >
+                <FiChevronLeft />
+              </button>
+            )}
+
+            {currentImageIndex < imagesList.length - 1 && (
+              <button 
+                type="button" 
+                className="carousel-btn next"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrentImageIndex((prev) => prev + 1);
+                }}
+              >
+                <FiChevronRight />
+              </button>
+            )}
+
+            <div className="carousel-dots">
+              {imagesList.map((_, idx) => (
+                <div 
+                  key={idx} 
+                  className={`carousel-dot ${idx === currentImageIndex ? 'active' : ''}`}
+                />
+              ))}
+            </div>
+          </>
+        )}
+
         {isLikeAnimating && isLiked && (
           <div className="big-heart-animation">
             <FaHeart />
@@ -152,22 +229,34 @@ const PostCard = ({ post, onPostDeleted }) => {
 
       {/* Action Bar */}
       <div className="post-actions">
-        <button 
-          onClick={handleToggleLike} 
-          className={`action-btn like-btn ${isLiked ? 'liked' : ''}`}
-          aria-label="Like"
-        >
-          {isLiked ? <FaHeart className="heart-icon filled" /> : <FiHeart className="heart-icon" />}
-          <span className="action-count">{likesCount}</span>
-        </button>
+        <div className="post-actions-left">
+          <button 
+            onClick={handleToggleLike} 
+            className={`action-btn like-btn ${isLiked ? 'liked' : ''}`}
+            aria-label="Like"
+          >
+            {isLiked ? <FaHeart className="heart-icon filled" /> : <FiHeart className="heart-icon" />}
+            <span className="action-count">{likesCount}</span>
+          </button>
 
+          <button 
+            onClick={handleToggleComments} 
+            className="action-btn comment-btn"
+            aria-label="Comments"
+          >
+            <FiMessageCircle className="comment-icon" />
+            <span className="action-count">{commentsCount}</span>
+          </button>
+        </div>
+
+        {/* Bookmark / Save */}
         <button 
-          onClick={handleToggleComments} 
-          className="action-btn comment-btn"
-          aria-label="Comments"
+          onClick={handleToggleSave} 
+          className={`action-btn bookmark-btn ${isSaved ? 'saved' : ''}`}
+          title={isSaved ? "Сакталгандардан өчүрүү" : "Сактоо"}
+          aria-label="Save Post"
         >
-          <FiMessageCircle className="comment-icon" />
-          <span className="action-count">{commentsCount}</span>
+          {isSaved ? <FaBookmark /> : <FiBookmark />}
         </button>
       </div>
 

@@ -8,7 +8,10 @@ import {
   FiX, 
   FiUser, 
   FiCheck, 
-  FiCheckCircle 
+  FiCheckCircle,
+  FiImage,
+  FiMic,
+  FiSquare
 } from 'react-icons/fi';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
@@ -21,9 +24,16 @@ const Chat = () => {
   const [activeConv, setActiveConv] = useState(null);
   const [messages, setMessages] = useState([]);
   const [messageText, setMessageText] = useState('');
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
+  const [isRecording, setIsRecording] = useState(false);
   const [sending, setSending] = useState(false);
   const [loadingConvs, setLoadingConvs] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
+
+  const fileInputRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
 
   // New Chat Modal state
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
@@ -90,13 +100,98 @@ const Chat = () => {
   // When active conversation changes
   const handleSelectConversation = (conv) => {
     setActiveConv(conv);
+    setSelectedImage(null);
+    setImagePreview('');
     fetchMessages(conv.id, true);
   };
 
-  // Send message
+  const handleImageSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setSelectedImage(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleRemoveAttachedImage = () => {
+    setSelectedImage(null);
+    setImagePreview('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  // Voice recording toggle
+  const toggleVoiceRecording = async () => {
+    if (isRecording) {
+      // Stop recording
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+      }
+      setIsRecording(false);
+    } else {
+      // Start recording
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mediaRecorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = mediaRecorder;
+        audioChunksRef.current = [];
+
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            audioChunksRef.current.push(event.data);
+          }
+        };
+
+        mediaRecorder.onstop = async () => {
+          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+          stream.getTracks().forEach((track) => track.stop());
+          // Send audio message directly
+          await sendMediaMessage(null, audioBlob);
+        };
+
+        mediaRecorder.start();
+        setIsRecording(true);
+      } catch (err) {
+        console.error('Microphone error', err);
+        alert('Микрофонго жеткилик берилген жок.');
+      }
+    }
+  };
+
+  const sendMediaMessage = async (imageFile, audioBlob) => {
+    if (!activeConv || sending) return;
+    setSending(true);
+
+    try {
+      const formData = new FormData();
+      if (imageFile) formData.append('image', imageFile);
+      if (audioBlob) formData.append('audio', audioBlob, 'voice_message.webm');
+      if (messageText.trim()) formData.append('text', messageText.trim());
+
+      const res = await api.post(`/chat/conversations/${activeConv.id}/messages/`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      setMessages((prev) => [...prev, res.data]);
+      setTimeout(scrollToBottom, 50);
+      handleRemoveAttachedImage();
+      setMessageText('');
+      fetchConversations();
+    } catch (err) {
+      console.error('Send media message error', err);
+      alert('Медиа билдирүү жөнөтүлбөй калды.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  // Send message (text or with attached image)
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!messageText.trim() || !activeConv || sending) return;
+    if ((!messageText.trim() && !selectedImage) || !activeConv || sending) return;
+
+    if (selectedImage) {
+      await sendMediaMessage(selectedImage, null);
+      return;
+    }
 
     const textToSend = messageText.trim();
     setMessageText('');
@@ -109,8 +204,6 @@ const Chat = () => {
 
       setMessages((prev) => [...prev, res.data]);
       setTimeout(scrollToBottom, 50);
-
-      // Refresh conversations list to update last_message
       fetchConversations();
     } catch (err) {
       console.error('Send message error', err);
@@ -342,7 +435,21 @@ const Chat = () => {
                       )}
 
                       <div className={`message-bubble ${isMine ? 'mine' : 'theirs'}`}>
-                        <p className="bubble-text">{m.text}</p>
+                        {m.image && (
+                          <img 
+                            src={m.image} 
+                            alt="Chat image" 
+                            className="bubble-image"
+                            onClick={() => window.open(m.image, '_blank')} 
+                          />
+                        )}
+
+                        {m.audio && (
+                          <audio controls src={m.audio} className="bubble-audio" />
+                        )}
+
+                        {m.text && <p className="bubble-text">{m.text}</p>}
+
                         <div className="bubble-meta">
                           <span className="bubble-time">{formatMessageTime(m.created_at)}</span>
                           {isMine && (
@@ -359,19 +466,62 @@ const Chat = () => {
               <div ref={messagesEndRef} />
             </div>
 
+            {/* Attached Image Preview */}
+            {imagePreview && (
+              <div className="chat-pending-preview">
+                <img src={imagePreview} alt="Attached preview" className="chat-pending-img" />
+                <span style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>Сүрөт тиркелди</span>
+                <button 
+                  type="button" 
+                  onClick={handleRemoveAttachedImage}
+                  style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex' }}
+                >
+                  <FiX />
+                </button>
+              </div>
+            )}
+
             {/* Chat Input Bar */}
             <form onSubmit={handleSendMessage} className="chat-input-bar">
+              {/* Hidden file input for images */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImageSelect}
+                accept="image/*"
+                style={{ display: 'none' }}
+              />
+
+              <button
+                type="button"
+                className="chat-attach-btn"
+                onClick={() => fileInputRef.current?.click()}
+                title="Сүрөт тиркөө"
+              >
+                <FiImage />
+              </button>
+
+              <button
+                type="button"
+                className={`chat-mic-btn ${isRecording ? 'recording' : ''}`}
+                onClick={toggleVoiceRecording}
+                title={isRecording ? "Жаздырууну токтотуу жана жөнөтүү" : "Үн билдирүү жаздыруу"}
+              >
+                {isRecording ? <FiSquare /> : <FiMic />}
+              </button>
+
               <input
                 type="text"
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
-                placeholder="Билдирүү жазыңыз..."
+                placeholder={isRecording ? "Үн жазылууда... Токтотуу үчүн басыңыз" : "Билдирүү жазыңыз..."}
                 className="chat-text-input"
                 autoFocus
               />
+
               <button
                 type="submit"
-                disabled={!messageText.trim() || sending}
+                disabled={(!messageText.trim() && !selectedImage) || sending}
                 className="chat-send-btn"
                 title="Жөнөтүү"
               >

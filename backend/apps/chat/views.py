@@ -85,9 +85,12 @@ class MessageListCreateView(APIView):
             )
 
         text = request.data.get("text", "").strip()
-        if not text:
+        image = request.FILES.get("image")
+        audio = request.FILES.get("audio")
+
+        if not text and not image and not audio:
             return Response(
-                {"detail": "Билдирүү тексти бош болбошу керек."},
+                {"detail": "Билдирүү тексти же медиа файлы көрсөтүлүшү керек."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -95,6 +98,8 @@ class MessageListCreateView(APIView):
             conversation=conversation,
             sender=request.user,
             text=text,
+            image=image,
+            audio=audio,
         )
         # Диалогдун updated_at убактысын жаңыртуу
         conversation.save()

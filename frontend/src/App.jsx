@@ -9,6 +9,8 @@ import Register from './pages/Register';
 import Home from './pages/Home';
 import Profile from './pages/Profile';
 import Search from './pages/Search';
+import Explore from './pages/Explore';
+import Reels from './pages/Reels';
 import Chat from './pages/Chat';
 import Notifications from './pages/Notifications';
 
@@ -33,6 +35,8 @@ function App() {
             <Route index element={<Home />} />
             <Route path="profile/:username" element={<Profile />} />
             <Route path="search" element={<Search />} />
+            <Route path="explore" element={<Explore />} />
+            <Route path="reels" element={<Reels />} />
             <Route path="chat" element={<Chat />} />
             <Route path="notifications" element={<Notifications />} />
           </Route>

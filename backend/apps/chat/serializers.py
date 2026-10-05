@@ -17,6 +17,8 @@ class MessageSerializer(serializers.ModelSerializer):
             "sender_username",
             "sender_avatar",
             "text",
+            "image",
+            "audio",
             "is_read",
             "created_at",
         ]

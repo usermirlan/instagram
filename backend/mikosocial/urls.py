@@ -132,6 +132,7 @@ urlpatterns = [
     path("api/", include("apps.follows.urls")),
     path("api/", include("apps.chat.urls")),
     path("api/", include("apps.notifications.urls")),
+    path("api/", include("apps.stories.urls")),
 ]
 
 # Development режиминде медиа файлдарды сервер аркылуу берүү

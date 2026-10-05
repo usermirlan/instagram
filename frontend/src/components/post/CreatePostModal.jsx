@@ -4,8 +4,8 @@ import api from '../../api/axios';
 import './CreatePostModal.css';
 
 const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
+  const [imageFiles, setImageFiles] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
   const [caption, setCaption] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState('');
@@ -14,37 +14,36 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
   if (!isOpen) return null;
 
   const handleFileSelect = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
 
-    // Валидация өлчөмү: 5MB
-    if (file.size > 5 * 1024 * 1024) {
-      setError('Сүрөттүн өлчөмү 5MBдан ашпашы керек.');
-      return;
-    }
+    const validFiles = [];
+    const validPreviews = [];
 
-    // Валидация форматы
-    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-    if (!allowed.includes(file.type)) {
-      setError('JPG, PNG же WebP форматындагы сүрөт тандаңыз.');
-      return;
+    for (const file of files) {
+      if (file.size > 10 * 1024 * 1024) {
+        setError('Ар бир сүрөт 10MBдан ашпашы керек.');
+        return;
+      }
+      validFiles.push(file);
+      validPreviews.push(URL.createObjectURL(file));
     }
 
     setError('');
-    setImageFile(file);
-    setImagePreview(URL.createObjectURL(file));
+    setImageFiles((prev) => [...prev, ...validFiles]);
+    setImagePreviews((prev) => [...prev, ...validPreviews]);
   };
 
-  const handleRemoveImage = () => {
-    setImageFile(null);
-    setImagePreview(null);
+  const handleRemoveImage = (index) => {
+    setImageFiles((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!imageFile) {
-      setError('Пост үчүн сүрөт тандаңыз.');
+    if (!imageFiles.length) {
+      setError('Пост үчүн жок дегенде бир сүрөт тандаңыз.');
       return;
     }
 
@@ -53,7 +52,12 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
       setError('');
 
       const formData = new FormData();
-      formData.append('image', imageFile);
+      // Primary image
+      formData.append('image', imageFiles[0]);
+      // Carousel images
+      imageFiles.forEach((file) => {
+        formData.append('images', file);
+      });
       formData.append('caption', caption.trim());
 
       const res = await api.post('/posts/', formData, {
@@ -75,8 +79,8 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
   };
 
   const handleClose = () => {
-    setImageFile(null);
-    setImagePreview(null);
+    setImageFiles([]);
+    setImagePreviews([]);
     setCaption('');
     setError('');
     onClose();
@@ -97,28 +101,52 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
 
         <form onSubmit={handleSubmit} className="create-post-form">
           {/* Image upload area */}
-          {!imagePreview ? (
+          {!imagePreviews.length ? (
             <div 
               className="dropzone-area" 
               onClick={() => fileInputRef.current?.click()}
             >
               <FiUploadCloud className="dropzone-icon" />
-              <h3>Сүрөттү бул жерге тандаңыз</h3>
-              <p>JPG, PNG, WebP (макс. 5MB)</p>
+              <h3>Сүрөттөрдү бул жерге тандаңыз</h3>
+              <p>JPG, PNG, WebP (бир же бир нече сүрөт / карусель)</p>
               <button type="button" className="btn-secondary" style={{ marginTop: '8px' }}>
                 <FiImage /> Компьютерден тандоо
               </button>
             </div>
           ) : (
-            <div className="image-preview-container">
-              <img src={imagePreview} alt="Preview" className="post-upload-preview" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', gap: '8px', maxHeight: '220px', overflowY: 'auto' }}>
+                {imagePreviews.map((previewUrl, idx) => (
+                  <div key={idx} style={{ position: 'relative', width: '100%', paddingTop: '100%', borderRadius: '10px', overflow: 'hidden', background: '#000' }}>
+                    <img 
+                      src={previewUrl} 
+                      alt={`Preview ${idx + 1}`} 
+                      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} 
+                    />
+                    <button 
+                      type="button" 
+                      onClick={() => handleRemoveImage(idx)} 
+                      style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(0,0,0,0.7)', color: 'white', border: 'none', borderRadius: '50%', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                      title="Өчүрүү"
+                    >
+                      <FiX size={14} />
+                    </button>
+                    {idx === 0 && (
+                      <span style={{ position: 'absolute', bottom: '4px', left: '4px', background: '#3b82f6', color: 'white', fontSize: '10px', padding: '2px 5px', borderRadius: '4px', fontWeight: 600 }}>
+                        Башкы
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+
               <button 
                 type="button" 
-                onClick={handleRemoveImage} 
-                className="remove-preview-btn" 
-                title="Сүрөттү өчүрүү"
+                onClick={() => fileInputRef.current?.click()}
+                className="btn-secondary"
+                style={{ fontSize: '0.85rem', padding: '6px 12px', alignSelf: 'flex-start' }}
               >
-                <FiX />
+                + Дагы сүрөт кошуу
               </button>
             </div>
           )}
@@ -128,6 +156,7 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
             ref={fileInputRef}
             onChange={handleFileSelect}
             accept="image/*"
+            multiple
             style={{ display: 'none' }}
           />
 
@@ -152,7 +181,7 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
             </button>
             <button 
               type="submit" 
-              disabled={!imageFile || isUploading} 
+              disabled={!imageFiles.length || isUploading} 
               className="btn-primary"
             >
               <FiCheck /> {isUploading ? 'Жүктөлүүдө...' : 'Бөлүшүү'}

@@ -4,6 +4,7 @@ import { FiPlusSquare, FiCompass, FiRefreshCw } from 'react-icons/fi';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import PostCard from '../components/post/PostCard';
+import StoryBar from '../components/story/StoryBar';
 import './Home.css';
 
 const Home = () => {
@@ -46,22 +47,8 @@ const Home = () => {
 
   return (
     <div className="home-feed-container">
-      {/* Stories / Quick Statuses Bar */}
-      <div className="stories-bar glass-card">
-        <div className="story-item active-user" onClick={openCreatePost}>
-          <div className="story-avatar-wrapper">
-            {user?.profile?.avatar ? (
-              <img src={user.profile.avatar} alt="Me" className="story-avatar" />
-            ) : (
-              <div className="story-avatar placeholder">
-                {user?.username?.charAt(0).toUpperCase()}
-              </div>
-            )}
-            <span className="story-plus-badge">+</span>
-          </div>
-          <span className="story-username">Жаңы пост</span>
-        </div>
-      </div>
+      {/* Stories Bar */}
+      <StoryBar />
 
       {/* Main Feed Content */}
       <div className="feed-posts-wrapper">

@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     "apps.follows",
     "apps.chat",
     "apps.notifications",
+    "apps.stories",
 ]
 
 
